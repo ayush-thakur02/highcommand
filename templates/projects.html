@@ -1,0 +1,48 @@
+{% extends "base.html" %}
+
+{% block title %}{% if view == 'mine' %}My Projects{% else %}All Projects{% endif %} - HighCommand{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h1>{% if view == 'mine' %}MY PROJECTS{% else %}ALL PROJECTS{% endif %}</h1>
+    {% if view == 'all' %}
+    <a href="{{ url_for('project_new') }}" class="btn btn-primary">NEW PROJECT</a>
+    {% endif %}
+</div>
+
+{% if projects %}
+<ul class="list">
+    {% for project in projects %}
+    <li class="list-item">
+        <div style="flex: 1;">
+            <div class="list-item-title">{{ project.name }}</div>
+            <div class="list-item-meta">
+                Owner: {{ project.owner_name }} | Status: {{ project.status|upper }} | Created: {{
+                project.created_at[:10] }}
+                {% if view == 'mine' %}
+                {% if project.is_owner %}
+                <br><strong>Role: OWNER</strong>
+                {% else %}
+                <br><strong>Role: MEMBER</strong>
+                {% endif %}
+                {% endif %}
+                {% if project.description %}
+                <br>{{ project.description }}
+                {% endif %}
+            </div>
+        </div>
+        <div class="list-item-actions">
+            <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-small">VIEW</a>
+            {% if project.is_owner %}
+            <a href="{{ url_for('project_edit', project_id=project.id) }}" class="btn btn-small">EDIT</a>
+            {% endif %}
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="card">
+    <p>NO PROJECTS FOUND.</p>
+</div>
+{% endif %}
+{% endblock %}

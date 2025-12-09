@@ -1,0 +1,27 @@
+{% extends "base.html" %}
+
+{% block title %}Dashboard - HighCommand{% endblock %}
+
+{% block content %}
+<h1>DASHBOARD</h1>
+
+<div class="grid grid-3 mt-3">
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.total_projects }}</span>
+        <span class="stat-label">IN-PROGRESS PROJECTS</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.tasks_todo }}</span>
+        <span class="stat-label">TODO TASKS</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ stats.tasks_in_progress }}</span>
+        <span class="stat-label">IN-PROGRESS TASKS</span>
+    </div>
+</div>
+
+<div class="section mt-3">
+    <p>VIEW YOUR <a href="{{ url_for('my_projects') }}">PROJECTS</a> OR <a href="{{ url_for('my_tasks') }}">ASSIGNED
+            TASKS</a></p>
+</div>
+{% endblock %}

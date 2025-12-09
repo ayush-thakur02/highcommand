@@ -1,0 +1,15 @@
+{% extends "base.html" %}
+
+{% block title %}Error {{ error }} - HighCommand{% endblock %}
+
+{% block content %}
+<div class="auth-container">
+    <div class="auth-box text-center">
+        <h1>ERROR {{ error }}</h1>
+        <p class="mt-3">{{ message }}</p>
+        <div class="mt-3">
+            <a href="{{ url_for('dashboard') }}" class="btn btn-primary">GO TO DASHBOARD</a>
+        </div>
+    </div>
+</div>
+{% endblock %}

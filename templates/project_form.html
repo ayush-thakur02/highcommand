@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}{{ action }} Project - HighCommand{% endblock %}
+
+{% block content %}
+<h1>{{ action }} PROJECT</h1>
+
+<div class="card mt-3">
+    <form method="POST">
+        <div class="form-group">
+            <label for="name">PROJECT NAME *</label>
+            <input type="text" id="name" name="name" required value="{{ project.name if project else '' }}"
+                placeholder="At least 3 characters">
+        </div>
+
+        <div class="form-group">
+            <label for="description">DESCRIPTION</label>
+            <textarea id="description" name="description"
+                placeholder="Optional project description">{{ project.description if project else '' }}</textarea>
+        </div>
+
+        {% if project %}
+        <div class="form-group">
+            <label for="status">STATUS *</label>
+            <select id="status" name="status" required>
+                <option value="in-progress" {% if project.status=='in-progress' %}selected{% endif %}>IN-PROGRESS
+                </option>
+                <option value="completed" {% if project.status=='completed' %}selected{% endif %}>COMPLETED</option>
+            </select>
+        </div>
+        {% endif %}
+
+        <div class="btn-group">
+            <button type="submit" class="btn btn-primary">{{ action|upper }}</button>
+            <a href="{% if project %}{{ url_for('project_detail', project_id=project.id) }}{% else %}{{ url_for('my_projects') }}{% endif %}"
+                class="btn">CANCEL</a>
+        </div>
+    </form>
+</div>
+{% endblock %}

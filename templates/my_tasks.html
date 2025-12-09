@@ -1,0 +1,40 @@
+{% extends "base.html" %}
+
+{% block title %}My Tasks - HighCommand{% endblock %}
+
+{% block content %}
+<h1>MY TASKS</h1>
+
+<div class="mt-2">
+    <p><strong>TODO:</strong> {{ todo_count }} | <strong>IN PROGRESS:</strong> {{ in_progress_count }}</p>
+</div>
+
+{% if tasks %}
+<ul class="list mt-3">
+    {% for task in tasks %}
+    <li class="list-item">
+        <div style="flex: 1;">
+            <div class="list-item-title">
+                {% if task.status == 'todo' %}○{% elif task.status == 'in-progress' %}◐{% else %}●{% endif %}
+                {{ task.title }}
+            </div>
+            <div class="list-item-meta">
+                Project: {{ task.project_name }} | Status: {{ task.status|upper }} | Priority: {{ task.priority|upper }}
+                {% if task.due_date %}
+                <br>Due: {{ task.due_date }}
+                {% endif %}
+                <br>Assigned to: {{ task.assignee_names }}
+            </div>
+        </div>
+        <div class="list-item-actions">
+            <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-small">VIEW</a>
+        </div>
+    </li>
+    {% endfor %}
+</ul>
+{% else %}
+<div class="card mt-3">
+    <p>NO TASKS ASSIGNED TO YOU.</p>
+</div>
+{% endif %}
+{% endblock %}

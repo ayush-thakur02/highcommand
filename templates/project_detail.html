@@ -1,0 +1,161 @@
+{% extends "base.html" %}
+
+{% block title %}{{ project.name }} - HighCommand{% endblock %}
+
+{% block content %}
+<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
+    <h1>{{ project.name }}</h1>
+    <div style="display: flex; gap: 12px;">
+        {% if is_member %}
+        <a href="{{ url_for('task_new', project_id=project.id) }}" class="btn btn-primary">NEW TASK</a>
+        {% endif %}
+        {% if is_owner %}
+        <a href="{{ url_for('project_edit', project_id=project.id) }}" class="btn">EDIT</a>
+        {% endif %}
+    </div>
+</div>
+
+<div class="card mb-3">
+    <div class="detail-row">
+        <div class="detail-label">OWNER</div>
+        <div class="detail-value">{{ project.owner_name }}</div>
+    </div>
+    <div class="detail-row">
+        <div class="detail-label">STATUS</div>
+        <div class="detail-value">{{ project.status|upper }}</div>
+    </div>
+    <div class="detail-row">
+        <div class="detail-label">CREATED</div>
+        <div class="detail-value">{{ project.created_at }}</div>
+    </div>
+    <div class="detail-row" style="border-bottom: none;">
+        <div class="detail-label">DESCRIPTION</div>
+        <div class="detail-value">{{ project.description or 'No description' }}</div>
+    </div>
+</div>
+
+{% if not is_member %}
+<div class="card mb-3">
+    <p><strong>YOU ARE NOT A MEMBER OF THIS PROJECT.</strong></p>
+    <form method="POST" action="{{ url_for('project_join_request', project_id=project.id) }}">
+        <button type="submit" class="btn btn-primary mt-2">REQUEST TO JOIN</button>
+    </form>
+</div>
+{% endif %}
+
+{% if is_member %}
+<div class="section mb-3">
+    <div class="section-header">TEAM MEMBERS ({{ members|length }})</div>
+    <ul class="list">
+        {% for member in members %}
+        <li class="list-item">
+            <div>
+                <strong>{{ member.username }}</strong>
+                <span class="badge">{{ member.role|upper }}</span>
+            </div>
+            {% if is_owner and member.role != 'owner' %}
+            <form method="POST" action="{{ url_for('remove_member', project_id=project.id, user_id=member.id) }}"
+                style="display: inline;">
+                <button type="submit" class="btn btn-small"
+                    onclick="return confirm('Remove this member?');">REMOVE</button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+
+{% if is_owner and pending_requests %}
+<div class="section mb-3">
+    <div class="section-header">PENDING JOIN REQUESTS ({{ pending_requests|length }})</div>
+    <ul class="list">
+        {% for req in pending_requests %}
+        <li class="list-item">
+            <div>
+                <strong>{{ req.username }}</strong>
+                <div class="list-item-meta">Requested: {{ req.requested_at[:10] }}</div>
+            </div>
+            <div style="display: flex; gap: 8px;">
+                <form method="POST"
+                    action="{{ url_for('approve_join_request', project_id=project.id, request_id=req.id) }}"
+                    style="display: inline;">
+                    <button type="submit" class="btn btn-small btn-primary">APPROVE</button>
+                </form>
+                <form method="POST"
+                    action="{{ url_for('reject_join_request', project_id=project.id, request_id=req.id) }}"
+                    style="display: inline;">
+                    <button type="submit" class="btn btn-small">REJECT</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="grid grid-4 mb-4">
+    <div class="stat-box">
+        <span class="stat-number">{{ task_stats.total }}</span>
+        <span class="stat-label">TOTAL TASKS</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ task_stats.todo }}</span>
+        <span class="stat-label">TODO</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ task_stats.in_progress }}</span>
+        <span class="stat-label">IN PROGRESS</span>
+    </div>
+    <div class="stat-box">
+        <span class="stat-number">{{ task_stats.done }}</span>
+        <span class="stat-label">DONE</span>
+    </div>
+</div>
+
+<div class="section">
+    <div class="section-header">TASKS</div>
+
+    {% if tasks %}
+    <ul class="list">
+        {% for task in tasks %}
+        <li class="list-item">
+            <div style="flex: 1;">
+                <div class="list-item-title">
+                    <span class="badge badge-{{ task.status }}">{{ task.status|upper }}</span>
+                    <span class="badge badge-{{ task.priority }}">{{ task.priority|upper }}</span>
+                    {{ task.title }}
+                </div>
+                <div class="list-item-meta">
+                    Assigned to: {{ task.assignee_names }} |
+                    Due: {{ task.due_date or 'No due date' }} |
+                    Creator: {{ task.creator_name }}
+                </div>
+            </div>
+            <div class="list-item-actions">
+                <a href="{{ url_for('task_detail', task_id=task.id) }}" class="btn btn-small">VIEW</a>
+                <a href="{{ url_for('task_edit', task_id=task.id) }}" class="btn btn-small">EDIT</a>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+    {% else %}
+    <div class="card">
+        <p>NO TASKS YET. <a href="{{ url_for('task_new', project_id=project.id) }}">CREATE THE FIRST TASK</a></p>
+    </div>
+    {% endif %}
+</div>
+
+{% if is_owner %}
+<div class="detail-actions mt-3">
+    <div style="display: flex; justify-content: space-between; align-items: center;">
+        <a href="{{ url_for('project_export', project_id=project.id) }}" class="btn">EXPORT TASKS (CSV)</a>
+
+        <form method="POST" action="{{ url_for('project_delete', project_id=project.id) }}"
+            onsubmit="return confirm('DELETE THIS PROJECT AND ALL ITS TASKS? THIS CANNOT BE UNDONE.');">
+            <button type="submit" class="btn btn-danger">DELETE PROJECT</button>
+        </form>
+    </div>
+</div>
+{% endif %}
+{% endif %}
+{% endblock %}
