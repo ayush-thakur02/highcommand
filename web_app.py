@@ -573,6 +573,11 @@ def project_export(project_id):
         flash('Project not found.', 'error')
         return redirect(url_for('project_list'))
     
+    # Check if user is a member
+    if not projects.is_member(project_id, session['user_id']):
+        flash('Only project members can export tasks.', 'error')
+        return redirect(url_for('project_detail', project_id=project_id))
+    
     from flask import Response
     csv_data = tasks.export_tasks_to_csv(project_id)
     
