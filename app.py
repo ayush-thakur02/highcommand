@@ -77,10 +77,17 @@ class Database:
                 description TEXT,
                 owner_id INTEGER NOT NULL,
                 status TEXT NOT NULL DEFAULT 'in-progress',
+                vm_ip TEXT,
                 created_at TEXT NOT NULL,
                 FOREIGN KEY (owner_id) REFERENCES users(id)
             )
         """)
+        
+        # Migration: Add vm_ip column if it doesn't exist
+        try:
+            cursor.execute("ALTER TABLE projects ADD COLUMN vm_ip TEXT")
+        except sqlite3.OperationalError:
+            pass  # Column already exists
         
         # Project members table (many-to-many relationship)
         cursor.execute("""
@@ -305,19 +312,20 @@ class ProjectManager:
     def __init__(self, db: Database):
         self.db = db
     
-    def create_project(self, name: str, description: str, owner_id: int) -> Tuple[bool, str]:
+    def create_project(self, name: str, description: str, owner_id: int, vm_ip: str = None) -> Tuple[bool, str]:
         """Create a new project."""
         if not name or len(name.strip()) < 3:
             return False, "Project name must be at least 3 characters long."
         
         name = name.strip()
         description = description.strip() if description else ""
+        vm_ip = vm_ip.strip() if vm_ip else None
         created_at = datetime.now().isoformat()
         
         try:
             project_id = self.db.execute_update(
-                "INSERT INTO projects (name, description, owner_id, created_at) VALUES (?, ?, ?, ?)",
-                (name, description, owner_id, created_at)
+                "INSERT INTO projects (name, description, owner_id, vm_ip, created_at) VALUES (?, ?, ?, ?, ?)",
+                (name, description, owner_id, vm_ip, created_at)
             )
             return True, f"Project '{name}' created successfully! (ID: {project_id})"
         except Exception as e:
@@ -359,7 +367,7 @@ class ProjectManager:
         return dict(projects[0]) if projects else None
     
     def update_project(self, project_id: int, user_id: int, name: str = None, 
-                      description: str = None) -> Tuple[bool, str]:
+                      description: str = None, vm_ip: str = None) -> Tuple[bool, str]:
         """Update project details (only owner can update)."""
         project = self.get_project(project_id)
         if not project:
@@ -378,6 +386,10 @@ class ProjectManager:
         if description is not None:
             updates.append("description = ?")
             params.append(description.strip())
+        
+        if vm_ip is not None:
+            updates.append("vm_ip = ?")
+            params.append(vm_ip.strip() if vm_ip else None)
         
         if not updates:
             return False, "No valid updates provided."
@@ -867,7 +879,7 @@ class TaskManager:
         
         output = StringIO()
         fieldnames = ['ID', 'Title', 'Description', 'Status', 'Priority', 
-                     'Due Date', 'Assignee', 'Creator', 'Created At']
+                     'Due Date', 'Assignees', 'Creator', 'Created At']
         writer = csv.DictWriter(output, fieldnames=fieldnames)
         
         writer.writeheader()
@@ -879,7 +891,7 @@ class TaskManager:
                 'Status': task['status'],
                 'Priority': task['priority'],
                 'Due Date': task['due_date'] or '',
-                'Assignee': task['assignee_name'] or 'Unassigned',
+                'Assignees': task['assignee_names'] or 'Unassigned',
                 'Creator': task['creator_name'],
                 'Created At': task['created_at']
             })

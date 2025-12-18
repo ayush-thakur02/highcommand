@@ -3,17 +3,22 @@
 {% block title %}{{ task.title }} - HighCommand{% endblock %}
 
 {% block content %}
-<div style="margin-bottom: 20px;">
+<div style="margin-bottom: 16px;">
     <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-small">← BACK TO PROJECT</a>
 </div>
 
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-    <h1>{{ task.title }}</h1>
-    {% if can_edit %}
-    <div style="display: flex; gap: 12px;">
+<div class="page-header">
+    <h1 class="page-title">{{ task.title }}</h1>
+    <div class="page-actions">
+        {% if can_edit and task.status != 'done' %}
+        <form method="POST" action="{{ url_for('task_mark_complete', task_id=task.id) }}" style="display: inline;">
+            <button type="submit" class="btn btn-success">✓ COMPLETED</button>
+        </form>
+        {% endif %}
+        {% if can_edit %}
         <a href="{{ url_for('task_edit', task_id=task.id) }}" class="btn">EDIT</a>
+        {% endif %}
     </div>
-    {% endif %}
 </div>
 
 <div class="card mb-3">

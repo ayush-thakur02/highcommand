@@ -1,0 +1,64 @@
+{% extends "base.html" %}
+
+{% block title %}Team - {{ project.name }} - HighCommand{% endblock %}
+
+{% block content %}
+<div style="margin-bottom: 16px;">
+    <a href="{{ url_for('project_detail', project_id=project.id) }}" class="btn btn-small">← BACK TO PROJECT</a>
+</div>
+
+<div class="page-header">
+    <h1 class="page-title">TEAM MEMBERS</h1>
+</div>
+
+<h3 class="mb-2">{{ project.name }}</h3>
+
+{% if is_owner and pending_requests %}
+<div class="card mb-2">
+    <div class="card-header">PENDING JOIN REQUESTS ({{ pending_requests|length }})</div>
+    <ul class="list">
+        {% for req in pending_requests %}
+        <li class="list-item">
+            <div>
+                <strong>{{ req.username }}</strong>
+                <div class="list-item-meta">Requested: {{ req.requested_at[:10] }}</div>
+            </div>
+            <div style="display: flex; gap: 4px;">
+                <form method="POST"
+                    action="{{ url_for('approve_join_request', project_id=project.id, request_id=req.id) }}"
+                    style="display: inline;">
+                    <button type="submit" class="btn btn-small btn-primary">APPROVE</button>
+                </form>
+                <form method="POST"
+                    action="{{ url_for('reject_join_request', project_id=project.id, request_id=req.id) }}"
+                    style="display: inline;">
+                    <button type="submit" class="btn btn-small">REJECT</button>
+                </form>
+            </div>
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endif %}
+
+<div class="card">
+    <div class="card-header">MEMBERS ({{ members|length }})</div>
+    <ul class="list">
+        {% for member in members %}
+        <li class="list-item">
+            <div style="flex: 1;">
+                <strong>{{ member.username }}</strong>
+                <span class="badge" style="margin-left: 8px;">{{ member.role|upper }}</span>
+            </div>
+            {% if is_owner and member.role != 'owner' %}
+            <form method="POST" action="{{ url_for('remove_member', project_id=project.id, user_id=member.id) }}"
+                style="display: inline;">
+                <button type="submit" class="btn btn-small btn-danger"
+                    onclick="return confirm('Remove {{ member.username }} from the project?');">REMOVE</button>
+            </form>
+            {% endif %}
+        </li>
+        {% endfor %}
+    </ul>
+</div>
+{% endblock %}

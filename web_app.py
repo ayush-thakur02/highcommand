@@ -181,8 +181,9 @@ def project_new():
     if request.method == 'POST':
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
+        vm_ip = request.form.get('vm_ip', '').strip()
         
-        success, message = projects.create_project(name, description, session['user_id'])
+        success, message = projects.create_project(name, description, session['user_id'], vm_ip)
         if success:
             flash(message, 'success')
             return redirect(url_for('my_projects'))
@@ -254,9 +255,10 @@ def project_edit(project_id):
         name = request.form.get('name', '').strip()
         description = request.form.get('description', '').strip()
         status = request.form.get('status', '').strip()
+        vm_ip = request.form.get('vm_ip', '').strip()
         
         success, message = projects.update_project(
-            project_id, session['user_id'], name, description
+            project_id, session['user_id'], name, description, vm_ip
         )
         if success and status:
             success2, message2 = projects.update_project_status(project_id, session['user_id'], status)
@@ -320,7 +322,38 @@ def remove_member(project_id, user_id):
     """Remove a member from a project."""
     success, message = projects.remove_member(project_id, user_id, session['user_id'])
     flash(message, 'success' if success else 'error')
-    return redirect(url_for('project_detail', project_id=project_id))
+    return redirect(url_for('project_members', project_id=project_id))
+
+
+@app.route('/projects/<int:project_id>/members')
+@login_required
+def project_members(project_id):
+    """View project team members."""
+    project = projects.get_project(project_id)
+    if not project:
+        flash('Project not found.', 'error')
+        return redirect(url_for('project_list'))
+    
+    user_id = session['user_id']
+    is_member = projects.is_member(project_id, user_id)
+    is_owner = project['owner_id'] == user_id
+    
+    if not is_member:
+        flash('Only project members can view the team.', 'error')
+        return redirect(url_for('project_detail', project_id=project_id))
+    
+    members = projects.get_project_members(project_id)
+    
+    # Get pending requests (only for owner)
+    pending_requests = []
+    if is_owner:
+        pending_requests = projects.get_pending_requests(project_id)
+    
+    return render_template('project_members.html',
+                         project=project,
+                         members=members,
+                         pending_requests=pending_requests,
+                         is_owner=is_owner)
 
 
 # ============================================================================
@@ -330,14 +363,15 @@ def remove_member(project_id, user_id):
 @app.route('/tasks/mine')
 @login_required
 def my_tasks():
-    """View tasks assigned to the user (todo and in-progress only)."""
+    """View all tasks assigned to the user."""
     user_id = session['user_id']
     
-    # Get tasks that are todo or in-progress
+    # Get tasks for all statuses
     todo_tasks = tasks.get_user_assigned_tasks(user_id, 'todo')
     in_progress_tasks = tasks.get_user_assigned_tasks(user_id, 'in-progress')
+    done_tasks = tasks.get_user_assigned_tasks(user_id, 'done')
     
-    all_tasks = todo_tasks + in_progress_tasks
+    all_tasks = todo_tasks + in_progress_tasks + done_tasks
     
     return render_template('my_tasks.html', 
                          tasks=all_tasks,
@@ -490,6 +524,44 @@ def task_delete(task_id):
         flash(message, 'error')
     
     return redirect(url_for('project_detail', project_id=project_id))
+
+
+@app.route('/tasks/<int:task_id>/complete', methods=['POST'])
+@login_required
+def task_mark_complete(task_id):
+    """Mark a task as complete."""
+    task = tasks.get_task(task_id)
+    if not task:
+        flash('Task not found.', 'error')
+        return redirect(url_for('dashboard'))
+    
+    project = projects.get_project(task['project_id'])
+    
+    # Check if user can edit (is creator, project owner, or assignee)
+    is_assignee = session['user_id'] in [a['id'] for a in task.get('assignees', [])]
+    can_edit = (task['creator_id'] == session['user_id'] or 
+                project['owner_id'] == session['user_id'] or
+                is_assignee)
+    
+    if not can_edit:
+        flash('You do not have permission to complete this task.', 'error')
+        return redirect(url_for('task_detail', task_id=task_id))
+    
+    success, message = tasks.update_task(
+        task_id, session['user_id'], project['owner_id'],
+        status='done'
+    )
+    
+    if success:
+        flash('Task marked as complete!', 'success')
+    else:
+        flash(message, 'error')
+    
+    # Redirect back to the referring page
+    referer = request.headers.get('Referer')
+    if referer:
+        return redirect(referer)
+    return redirect(url_for('task_detail', task_id=task_id))
 
 
 @app.route('/projects/<int:project_id>/export')

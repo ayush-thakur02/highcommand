@@ -19,6 +19,12 @@
                 placeholder="Optional project description">{{ project.description if project else '' }}</textarea>
         </div>
 
+        <div class="form-group">
+            <label for="vm_ip">VM IP ADDRESS</label>
+            <input type="text" id="vm_ip" name="vm_ip" value="{{ project.vm_ip if project else '' }}"
+                placeholder="Optional (e.g., 192.168.1.100)">
+        </div>
+
         {% if project %}
         <div class="form-group">
             <label for="status">STATUS *</label>

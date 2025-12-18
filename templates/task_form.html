@@ -53,15 +53,17 @@
         </div>
 
         <div class="form-group">
-            <label>ASSIGNEES (HOLD CTRL/CMD TO SELECT MULTIPLE)</label>
-            <select name="assignee_ids" multiple style="height: 150px;">
+            <label>ASSIGNEES</label>
+            <div class="checkbox-grid">
                 {% for member in members %}
-                <option value="{{ member.id }}" {% if task and member.id in task.assignees|map(attribute='id' )|list
-                    %}selected{% endif %}>
-                    {{ member.username }} ({{ member.role|upper }})
-                </option>
+                <label class="checkbox-item">
+                    <input type="checkbox" name="assignee_ids" value="{{ member.id }}" {% if task and member.id in
+                        task.assignees|map(attribute='id' )|list %}checked{% endif %}>
+                    <span class="checkbox-label">{{ member.username }}</span>
+                    <span class="badge">{{ member.role|upper }}</span>
+                </label>
                 {% endfor %}
-            </select>
+            </div>
             <small>Select one or more team members to assign this task</small>
         </div>
 

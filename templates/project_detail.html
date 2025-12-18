@@ -3,9 +3,9 @@
 {% block title %}{{ project.name }} - HighCommand{% endblock %}
 
 {% block content %}
-<div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 30px;">
-    <h1>{{ project.name }}</h1>
-    <div style="display: flex; gap: 12px;">
+<div class="page-header">
+    <h1 class="page-title">{{ project.name }}</h1>
+    <div class="page-actions">
         {% if is_member %}
         <a href="{{ url_for('task_new', project_id=project.id) }}" class="btn btn-primary">NEW TASK</a>
         {% endif %}
@@ -15,85 +15,52 @@
     </div>
 </div>
 
-<div class="card mb-3">
-    <div class="detail-row">
-        <div class="detail-label">OWNER</div>
-        <div class="detail-value">{{ project.owner_name }}</div>
+<div class="grid grid-3 mb-2">
+    <div class="card" style="grid-column: span 2;">
+        <div class="detail-row">
+            <div class="detail-label">OWNER</div>
+            <div class="detail-value">{{ project.owner_name }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">STATUS</div>
+            <div class="detail-value">{{ project.status|upper }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">CREATED</div>
+            <div class="detail-value">{{ project.created_at }}</div>
+        </div>
+        <div class="detail-row">
+            <div class="detail-label">VM IP</div>
+            <div class="detail-value">{{ project.vm_ip or 'Not set' }}</div>
+        </div>
+        <div class="detail-row" style="border-bottom: none;">
+            <div class="detail-label">DESCRIPTION</div>
+            <div class="detail-value">{{ project.description or 'No description' }}</div>
+        </div>
     </div>
-    <div class="detail-row">
-        <div class="detail-label">STATUS</div>
-        <div class="detail-value">{{ project.status|upper }}</div>
+
+    {% if is_member %}
+    <!-- Team Members Link Card -->
+    <div class="card" style="display: flex; flex-direction: column; justify-content: center; align-items: center;">
+        <div class="stat-number">{{ members|length }}</div>
+        <div class="stat-label" style="margin-bottom: 12px;">TEAM MEMBERS</div>
+        <a href="{{ url_for('project_members', project_id=project.id) }}" class="btn">VIEW TEAM</a>
     </div>
-    <div class="detail-row">
-        <div class="detail-label">CREATED</div>
-        <div class="detail-value">{{ project.created_at }}</div>
-    </div>
-    <div class="detail-row" style="border-bottom: none;">
-        <div class="detail-label">DESCRIPTION</div>
-        <div class="detail-value">{{ project.description or 'No description' }}</div>
-    </div>
+    {% endif %}
 </div>
 
 {% if not is_member %}
-<div class="card mb-3">
+<div class="card mb-2">
     <p><strong>YOU ARE NOT A MEMBER OF THIS PROJECT.</strong></p>
     <form method="POST" action="{{ url_for('project_join_request', project_id=project.id) }}">
-        <button type="submit" class="btn btn-primary mt-2">REQUEST TO JOIN</button>
+        <button type="submit" class="btn btn-primary mt-1">REQUEST TO JOIN</button>
     </form>
 </div>
 {% endif %}
 
 {% if is_member %}
-<div class="section mb-3">
-    <div class="section-header">TEAM MEMBERS ({{ members|length }})</div>
-    <ul class="list">
-        {% for member in members %}
-        <li class="list-item">
-            <div>
-                <strong>{{ member.username }}</strong>
-                <span class="badge">{{ member.role|upper }}</span>
-            </div>
-            {% if is_owner and member.role != 'owner' %}
-            <form method="POST" action="{{ url_for('remove_member', project_id=project.id, user_id=member.id) }}"
-                style="display: inline;">
-                <button type="submit" class="btn btn-small"
-                    onclick="return confirm('Remove this member?');">REMOVE</button>
-            </form>
-            {% endif %}
-        </li>
-        {% endfor %}
-    </ul>
-</div>
 
-{% if is_owner and pending_requests %}
-<div class="section mb-3">
-    <div class="section-header">PENDING JOIN REQUESTS ({{ pending_requests|length }})</div>
-    <ul class="list">
-        {% for req in pending_requests %}
-        <li class="list-item">
-            <div>
-                <strong>{{ req.username }}</strong>
-                <div class="list-item-meta">Requested: {{ req.requested_at[:10] }}</div>
-            </div>
-            <div style="display: flex; gap: 8px;">
-                <form method="POST"
-                    action="{{ url_for('approve_join_request', project_id=project.id, request_id=req.id) }}"
-                    style="display: inline;">
-                    <button type="submit" class="btn btn-small btn-primary">APPROVE</button>
-                </form>
-                <form method="POST"
-                    action="{{ url_for('reject_join_request', project_id=project.id, request_id=req.id) }}"
-                    style="display: inline;">
-                    <button type="submit" class="btn btn-small">REJECT</button>
-                </form>
-            </div>
-        </li>
-        {% endfor %}
-    </ul>
-</div>
-{% endif %}
-
-<div class="grid grid-4 mb-4">
+<div class="grid grid-4 mb-2">
     <div class="stat-box">
         <span class="stat-number">{{ task_stats.total }}</span>
         <span class="stat-label">TOTAL TASKS</span>
@@ -116,9 +83,33 @@
     <div class="section-header">TASKS</div>
 
     {% if tasks %}
-    <ul class="list">
+    <!-- Task Filters -->
+    <div class="filter-bar">
+        <div class="filter-group">
+            <label for="filter-status">STATUS:</label>
+            <select id="filter-status" onchange="filterTasks()">
+                <option value="active" selected>TODO & IN PROGRESS</option>
+                <option value="todo">TODO</option>
+                <option value="in-progress">IN PROGRESS</option>
+                <option value="done">DONE</option>
+                <option value="all">ALL</option>
+            </select>
+        </div>
+        <div class="filter-group">
+            <label for="filter-priority">PRIORITY:</label>
+            <select id="filter-priority" onchange="filterTasks()">
+                <option value="all">ALL</option>
+                <option value="low">LOW</option>
+                <option value="medium">MEDIUM</option>
+                <option value="high">HIGH</option>
+            </select>
+        </div>
+        <button class="btn btn-small" onclick="clearFilters()">CLEAR</button>
+    </div>
+
+    <ul class="list" id="task-list">
         {% for task in tasks %}
-        <li class="list-item">
+        <li class="list-item" data-status="{{ task.status }}" data-priority="{{ task.priority }}">
             <div style="flex: 1;">
                 <div class="list-item-title">
                     <span class="badge badge-{{ task.status }}">{{ task.status|upper }}</span>
@@ -138,6 +129,9 @@
         </li>
         {% endfor %}
     </ul>
+    <div id="no-results" class="card" style="display: none;">
+        <p>NO TASKS MATCH THE SELECTED FILTERS.</p>
+    </div>
     {% else %}
     <div class="card">
         <p>NO TASKS YET. <a href="{{ url_for('task_new', project_id=project.id) }}">CREATE THE FIRST TASK</a></p>
@@ -146,7 +140,7 @@
 </div>
 
 {% if is_owner %}
-<div class="detail-actions mt-3">
+<div class="detail-actions">
     <div style="display: flex; justify-content: space-between; align-items: center;">
         <a href="{{ url_for('project_export', project_id=project.id) }}" class="btn">EXPORT TASKS (CSV)</a>
 
@@ -158,4 +152,61 @@
 </div>
 {% endif %}
 {% endif %}
+
+<script>
+    // Run filter on page load to show only active tasks by default
+    document.addEventListener('DOMContentLoaded', function () {
+        filterTasks();
+    });
+
+    function toggleDropdown(id) {
+        const content = document.getElementById(id);
+        const header = content.previousElementSibling;
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            header.querySelector('span').textContent = header.querySelector('span').textContent.replace('▶', '▼');
+        } else {
+            content.style.display = 'none';
+            header.querySelector('span').textContent = header.querySelector('span').textContent.replace('▼', '▶');
+        }
+    }
+
+    function filterTasks() {
+        const statusFilter = document.getElementById('filter-status').value;
+        const priorityFilter = document.getElementById('filter-priority').value;
+        const tasks = document.querySelectorAll('#task-list .list-item');
+        let visibleCount = 0;
+
+        tasks.forEach(task => {
+            const status = task.getAttribute('data-status');
+            const priority = task.getAttribute('data-priority');
+
+            let statusMatch = false;
+            if (statusFilter === 'all') {
+                statusMatch = true;
+            } else if (statusFilter === 'active') {
+                statusMatch = (status === 'todo' || status === 'in-progress');
+            } else {
+                statusMatch = status === statusFilter;
+            }
+
+            const priorityMatch = priorityFilter === 'all' || priority === priorityFilter;
+
+            if (statusMatch && priorityMatch) {
+                task.style.display = 'flex';
+                visibleCount++;
+            } else {
+                task.style.display = 'none';
+            }
+        });
+
+        document.getElementById('no-results').style.display = visibleCount === 0 ? 'block' : 'none';
+    }
+
+    function clearFilters() {
+        document.getElementById('filter-status').value = 'active';
+        document.getElementById('filter-priority').value = 'all';
+        filterTasks();
+    }
+</script>
 {% endblock %}
