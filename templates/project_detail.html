@@ -112,9 +112,9 @@
         <li class="list-item" data-status="{{ task.status }}" data-priority="{{ task.priority }}">
             <div style="flex: 1;">
                 <div class="list-item-title">
+                    {{ task.title }}
                     <span class="badge badge-{{ task.status }}">{{ task.status|upper }}</span>
                     <span class="badge badge-{{ task.priority }}">{{ task.priority|upper }}</span>
-                    {{ task.title }}
                 </div>
                 <div class="list-item-meta">
                     Assigned to: {{ task.assignee_names }} |
